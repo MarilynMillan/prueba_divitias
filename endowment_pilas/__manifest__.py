@@ -9,6 +9,8 @@
     'data': [
         'security/ir.model.access.csv',
         'views/pila_novelty_type.xml',
+        'views/hr_administradoras_views.xml',
+        'views/list_administradora.xml',
         'views/hr_contract.xml',
         'views/hr_contract_concept.xml',
         'views/hr_leave_type.xml',

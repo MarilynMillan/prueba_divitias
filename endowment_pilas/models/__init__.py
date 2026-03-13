@@ -9,3 +9,5 @@ from . import hr_salary_rule
 from . import pila_novelty_type
 from . import hr_contract_novelty_line
 from . import work_center
+from . import hr_administradoras
+from . import list_administradoras
