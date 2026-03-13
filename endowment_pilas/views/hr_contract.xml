@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="view_hr_contract_novelty_form" model="ir.ui.view">
+            <field name="name">hr.contract.novelty.form</field>
+            <field name="model">hr.contract</field>
+            <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Novedades" name="pila_novelties">
+                        <field name="pila_novelty_ids">
+                            <list editable="bottom">
+                                <field name="novelty_type_id"/>
+                                <!--field name="traslado"/>
+                                <field name="ftp_destino_pension" 
+                                       invisible="novelty_code not in ['TDP']"
+                                       required="traslado and novelty_code in ['TDP']"/>
+                                <field name="ftp_destino_salud" 
+                            
+                                       invisible="novelty_code not in ['TDE']"
+                                       required="traslado and novelty_code in ['TDE']"/-->
+                                <field name="date_start"/>
+                                <field name="date_end"/>
+                                <!--field name="novelty_code" column_invisible="True"/-->
+                            </list>
+                        </field>
+                    </page>
+                </xpath>
+
+                <xpath expr="//group[@name='salary']" position="after">
+                    <group>
+                        <field name="date_wage_change"/>
+                    </group>
+                </xpath>
+
+                <xpath expr="//field[@name='auxilio_de_transporte']" position="after">
+                    <field name="wage_integral"/>
+                    <field name="wage_variable"/>
+                </xpath>
+
+                <xpath expr="//field[@name='AltoRiegoPension']" position="after">
+                    <field name="alto_riesgo"/>
+                    <field name="clase"/>
+                </xpath> 
+
+                <xpath expr="//field[@name='contract_type_id']" position="after">
+                    <field name="work_center_id"/>
+                    <field name="economic_activitity"/>
+                </xpath> 
+                 <xpath expr="//field[@name='date_start']" position="after">
+                    <field name="pila_ingreso_concepto_id"/>
+                </xpath> 
+                 <xpath expr="//field[@name='date_end']" position="after">
+                    <field name="pila_retiro_concepto_id"/>
+                </xpath> 
+            </field>
+        </record>
+    </data>
+</odoo>

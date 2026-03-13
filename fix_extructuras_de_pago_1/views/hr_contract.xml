@@ -1,0 +1,68 @@
+<odoo>
+  <data>
+  
+    <record id="hr_contract_administradora_view" model="ir.ui.view">
+            <field name="name">hr.contract.administradora</field>
+            <field name="model">hr.contract</field>
+            <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+            <field name="arch" type="xml">
+            <xpath expr="//page[1]" position="after">
+              <page string="Administradoras">
+                  <group >
+                    <field name="administradoras_ids" options="{'no_create': True, 'no_create_edit':True}" string="">
+                    <list>
+                        <field name="administradora"/>
+                        <field name="name"/>
+                        <field name="list_administradora_id" />
+                        <field name="ccostos"/>
+                    </list>
+                    <form>
+                     <group>
+                      <field name="administradora"/>
+                        <field name="name"/>
+                        <field name="ccostos"/>
+                        <field name="tarifa"/>
+                       <field name="tarifa_sena" invisible="not show_ccf" required="show_ccf"/>
+                      <field name="tarifa_icbf" invisible="not show_ccf" required="show_ccf"/>
+                      <field name="tarifa_esap" invisible="not show_ccf" required="show_ccf"/>
+                      <field name="tarifa_men" invisible="not show_ccf" required="show_ccf"/>
+                
+                     
+                        <field name="show_ccf" invisible="1"/>
+                        <field name="type_entity" widget="radio" options="{'horizontal': true}"/>
+
+                         <field name="list_administradora_id"  options="{'no_create': True, 'no_edit': True}" context="{'default_type_entity': type_entity}"/>
+
+                         <field name="traslado"/>
+                        <field name="list_administradora_destino_id"
+                            invisible="not traslado"
+                            required="traslado"
+                            options="{'no_create': True, 'no_edit': True}"/>
+
+                                         
+                    </group>
+                    </form>
+                    </field>
+                  </group>
+              </page>
+                 
+            </xpath>
+        </field>
+    </record>
+
+
+<!-- <record id="nomina_hr_contract_pasante" model="ir.ui.view">
+        <field name="name">nomina_hr_contract_pasante</field>
+        <field name="model">hr.contract</field>
+        <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='calendar_mismatch']" position="after">
+                <field name="pasante"/>
+			</xpath>
+
+        </field>
+    </record> -->
+  
+  </data>
+</odoo>
