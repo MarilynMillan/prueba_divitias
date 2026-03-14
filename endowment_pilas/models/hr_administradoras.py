@@ -224,7 +224,3 @@ class administradoras(models.Model):
             record.contract_id.write({'write_date': fields.Datetime.now()})
 
         return record
-
-    @api.onchange('centro_costos')
-    def _onchange_centro_costos(self):
-        pass
