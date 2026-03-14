@@ -8,4 +8,3 @@ from . import hr_centrocostos
 from . import res_company
 from . import hr_tipo
 from . import hr_administradoras
-from . import list_administradoras

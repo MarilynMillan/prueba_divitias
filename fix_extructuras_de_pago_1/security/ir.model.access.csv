@@ -5,4 +5,3 @@ access_editor_tipos,fix_extructuras_de_pago.hr_tipos,fix_extructuras_de_pago.mod
 access_editor_administradoras2,fix_extructuras_de_pago.hr_administradoras2,fix_extructuras_de_pago.model_hr_administradoras,hr.group_hr_user,1,1,1,1
 access_editor_de_reglas2,fix_extructuras_de_pago.hr_centrodecostos2,fix_extructuras_de_pago.model_hr_centrocostos,hr.group_hr_user,1,1,1,1
 access_editor_tipos2,fix_extructuras_de_pago.hr_tipos2,fix_extructuras_de_pago.model_hr_tipo,hr.group_hr_user,1,1,1,1
-access_list_administradoras,list.administradoras,model_list_administradoras,,1,1,1,1

@@ -28,7 +28,6 @@
         'security/ir.model.access.csv',
         'views/views.xml',
         'views/hr_administradora.xml',
-        'views/list_administradora.xml',
         'views/hr_centrocostos.xml',
         'views/hr_employee.xml',
         'views/hr_contract.xml',
