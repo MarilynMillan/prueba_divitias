@@ -931,10 +931,9 @@ class PayrollExcelWizard(models.TransientModel):
         wb.save(output)
         output.seek(0)
 
-        # --- 2. NOMBRE FIJO DEL ARCHIVO ---
-        # Forzamos el nombre exacto que me indicas
-        file_name = "DIVITIASSAS_1.xlsx"
-
+        # --- 2. NOMBRE DEL ARCHIVO ---
+        # Si se subió una plantilla, usamos su nombre. Si no, usamos el nombre por defecto.
+        file_name = self.plantilla_excel_name if self.plantilla_excel and self.plantilla_excel_name else "DIVITIASSAS_1.xlsx"
 
         # --- 3. CREAR EL ADJUNTO ---
         attachment = self.env['ir.attachment'].create({
