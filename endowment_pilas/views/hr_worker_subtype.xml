@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_worker_subtype_tree" model="ir.ui.view">
+        <field name="name">hr.worker.subtype.tree</field>
+        <field name="model">hr.worker.subtype</field>
+        <field name="arch" type="xml">
+            <tree string="Subtipos de Trabajador">
+                <field name="code"/>
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_hr_worker_subtype_form" model="ir.ui.view">
+        <field name="name">hr.worker.subtype.form</field>
+        <field name="model">hr.worker.subtype</field>
+        <field name="arch" type="xml">
+            <form string="Subtipo de Trabajador">
+                <sheet>
+                    <group>
+                        <field name="code"/>
+                        <field name="name"/>
+                        <field name="active" widget="boolean_toggle"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hr_worker_subtype" model="ir.actions.act_window">
+        <field name="name">Subtipos de Trabajador (PILA)</field>
+        <field name="res_model">hr.worker.subtype</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_hr_worker_subtype"
+              name="Subtipos de Trabajador"
+              parent="hr_payroll.menu_hr_payroll_configuration"
+              action="action_hr_worker_subtype"
+              sequence="42"/>
+</odoo>

@@ -44,6 +44,10 @@
                 </xpath> 
 
                 <xpath expr="//field[@name='contract_type_id']" position="after">
+                    <field name="tipo_trabajador_id"/>
+                    <field name="sub_tipo_trabajador_id"/>
+                    <field name="tipo_trabajador" invisible="1"/>
+                    <field name="sub_tipo_trabajador" invisible="1"/>
                     <field name="work_center_id"/>
                     <field name="economic_activitity"/>
                 </xpath> 

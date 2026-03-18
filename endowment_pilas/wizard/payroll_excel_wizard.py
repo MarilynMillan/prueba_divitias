@@ -15,6 +15,8 @@ class PayrollExcelWizard(models.TransientModel):
     date_from = fields.Date(string="Fecha Desde")
     date_to = fields.Date(string="Fecha Hasta")
     payslip_run_id = fields.Many2one('hr.payslip.run', string="Lote de Nómina")
+    template_file = fields.Binary(string='Plantilla Excel Opcional', help="Sube una plantilla de Excel (.xlsx) si deseas sobrescribir la plantilla por defecto.")
+    template_filename = fields.Char(string='Nombre de la plantilla')
 
     def action_generate_excel_report(self):
         """
@@ -51,15 +53,25 @@ class PayrollExcelWizard(models.TransientModel):
         output = io.BytesIO()
 
         # 1. CARGAR LA PLANTILLA (El molde que ya tiene todo el diseño)
-        path = get_module_resource('endowment_pilas', 'data', 'DIVITIASSAS_1.xlsx')
-        if not path or not os.path.exists(path):
-             raise UserError(f"No se encontró la plantilla en: {path}")
+        if self.template_file:
+            import base64
+            file_content = base64.b64decode(self.template_file)
+            file_stream = io.BytesIO(file_content)
+            try:
+                wb = openpyxl.load_workbook(file_stream)
+                sheet = wb.active
+            except Exception as e:
+                raise UserError(f"Error al abrir la plantilla subida: {str(e)}")
+        else:
+            path = get_module_resource('endowment_pilas', 'data', 'DIVITIASSAS_1.xlsx')
+            if not path or not os.path.exists(path):
+                 raise UserError(f"No se encontró la plantilla por defecto en: {path}")
 
-        try:
-            wb = openpyxl.load_workbook(path)
-            sheet = wb.active 
-        except Exception as e:
-            raise UserError(f"Error al abrir la plantilla: {str(e)}")
+            try:
+                wb = openpyxl.load_workbook(path)
+                sheet = wb.active
+            except Exception as e:
+                raise UserError(f"Error al abrir la plantilla: {str(e)}")
 
         # 2. DEFINIR SOLO EL ESTILO DE DATOS
         left_alignment = Alignment(horizontal='left', vertical='center')
@@ -103,15 +115,15 @@ class PayrollExcelWizard(models.TransientModel):
             tipo_doc_abreviado = mapeo_id.get(nombre_largo, nombre_largo)
             #####################################################################
             tipo_cotizante_excel_label = '' 
-            if contract and contract.tipo_trabajador: # Asegúrate que el campo se llama 'tipo_trabajador' y no 'tipo_cotizante'
-                # --- CORRECCIÓN AQUÍ ---
-                # Método recomendado para obtener la etiqueta legible del campo Selection
+            if contract and contract.tipo_trabajador_id:
+                tipo_cotizante_excel_label = contract.tipo_trabajador_id.display_name
+            elif contract and contract.tipo_trabajador: # Fallback a legado
                 tipo_cotizante_excel_label = dict(contract._fields['tipo_trabajador'].selection).get(contract.tipo_trabajador, '')
 
             sub_cotizante_excel_label = '' 
-            if contract and contract.sub_tipo_trabajador: # Asegúrate que el campo se llama 'tipo_trabajador' y no 'tipo_cotizante'
-                # --- CORRECCIÓN AQUÍ ---
-                # Método recomendado para obtener la etiqueta legible del campo Selection
+            if contract and contract.sub_tipo_trabajador_id:
+                sub_cotizante_excel_label = contract.sub_tipo_trabajador_id.display_name
+            elif contract and contract.sub_tipo_trabajador: # Fallback a legado
                 sub_cotizante_excel_label = dict(contract._fields['sub_tipo_trabajador'].selection).get(contract.sub_tipo_trabajador, '')
 
             # --- NUEVO: Lógica para 'Horas Laboradas' ---

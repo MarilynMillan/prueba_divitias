@@ -4,3 +4,5 @@ access_pila_novelty_type,pila.novelty.type,model_pila_novelty_type,,1,1,1,1
 access_hr_contract_novelty_line,hr.contract.novelty.line,model_hr_contract_novelty_line,,1,1,1,1
 access_hr_work_center,hr_work_center,model_hr_work_center,,1,1,1,1
 access_hr_contract_concept,hr.contract.concept,model_hr_contract_concept,,1,1,1,1
+access_hr_worker_type,hr.worker.type,model_hr_worker_type,,1,1,1,1
+access_hr_worker_subtype,hr.worker.subtype,model_hr_worker_subtype,,1,1,1,1
