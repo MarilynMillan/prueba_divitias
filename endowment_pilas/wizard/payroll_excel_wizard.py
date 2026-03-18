@@ -16,6 +16,9 @@ class PayrollExcelWizard(models.TransientModel):
     date_to = fields.Date(string="Fecha Hasta")
     payslip_run_id = fields.Many2one('hr.payslip.run', string="Lote de Nómina")
 
+    plantilla_excel = fields.Binary(string='Plantilla Excel', help='Sube la plantilla de Excel para usar en el reporte. Si está vacío, se usará la plantilla por defecto.')
+    plantilla_excel_name = fields.Char(string='Nombre Archivo Plantilla')
+
     def action_generate_excel_report(self):
         """
         Genera el reporte Excel de recibos de nómina filtrados.
@@ -51,15 +54,22 @@ class PayrollExcelWizard(models.TransientModel):
         output = io.BytesIO()
 
         # 1. CARGAR LA PLANTILLA (El molde que ya tiene todo el diseño)
-        path = get_module_resource('endowment_pilas', 'data', 'DIVITIASSAS_1.xlsx')
-        if not path or not os.path.exists(path):
-             raise UserError(f"No se encontró la plantilla en: {path}")
+        if self.plantilla_excel:
+            try:
+                wb = openpyxl.load_workbook(io.BytesIO(base64.b64decode(self.plantilla_excel)))
+                sheet = wb.active
+            except Exception as e:
+                raise UserError(f"Error al abrir la plantilla subida: {str(e)}")
+        else:
+            path = get_module_resource('endowment_pilas', 'data', 'DIVITIASSAS_1.xlsx')
+            if not path or not os.path.exists(path):
+                 raise UserError(f"No se encontró la plantilla en: {path}")
 
-        try:
-            wb = openpyxl.load_workbook(path)
-            sheet = wb.active 
-        except Exception as e:
-            raise UserError(f"Error al abrir la plantilla: {str(e)}")
+            try:
+                wb = openpyxl.load_workbook(path)
+                sheet = wb.active
+            except Exception as e:
+                raise UserError(f"Error al abrir la plantilla: {str(e)}")
 
         # 2. DEFINIR SOLO EL ESTILO DE DATOS
         left_alignment = Alignment(horizontal='left', vertical='center')
@@ -103,16 +113,23 @@ class PayrollExcelWizard(models.TransientModel):
             tipo_doc_abreviado = mapeo_id.get(nombre_largo, nombre_largo)
             #####################################################################
             tipo_cotizante_excel_label = '' 
-            if contract and contract.tipo_trabajador: # Asegúrate que el campo se llama 'tipo_trabajador' y no 'tipo_cotizante'
-                # --- CORRECCIÓN AQUÍ ---
-                # Método recomendado para obtener la etiqueta legible del campo Selection
-                tipo_cotizante_excel_label = dict(contract._fields['tipo_trabajador'].selection).get(contract.tipo_trabajador, '')
+            if contract:
+                if contract.pila_tipo_trabajador_id:
+                    # Usamos el nombre del nuevo campo configurable, si tiene algo (como '1.Dependiente')
+                    tipo_cotizante_excel_label = contract.pila_tipo_trabajador_id.name
+                elif contract.tipo_trabajador:
+                    # --- CORRECCIÓN AQUÍ ---
+                    # Método recomendado para obtener la etiqueta legible del campo Selection
+                    tipo_cotizante_excel_label = dict(contract._fields['tipo_trabajador'].selection).get(contract.tipo_trabajador, '')
 
             sub_cotizante_excel_label = '' 
-            if contract and contract.sub_tipo_trabajador: # Asegúrate que el campo se llama 'tipo_trabajador' y no 'tipo_cotizante'
-                # --- CORRECCIÓN AQUÍ ---
-                # Método recomendado para obtener la etiqueta legible del campo Selection
-                sub_cotizante_excel_label = dict(contract._fields['sub_tipo_trabajador'].selection).get(contract.sub_tipo_trabajador, '')
+            if contract:
+                if contract.pila_subtipo_trabajador_id:
+                    sub_cotizante_excel_label = contract.pila_subtipo_trabajador_id.name
+                elif contract.sub_tipo_trabajador:
+                    # --- CORRECCIÓN AQUÍ ---
+                    # Método recomendado para obtener la etiqueta legible del campo Selection
+                    sub_cotizante_excel_label = dict(contract._fields['sub_tipo_trabajador'].selection).get(contract.sub_tipo_trabajador, '')
 
             # --- NUEVO: Lógica para 'Horas Laboradas' ---
 

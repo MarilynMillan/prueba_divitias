@@ -66,7 +66,14 @@ class HrContract(models.Model):
         ('58', 'Estudiantes de prácticas laborales en el sector público'),
         ('59', 'Independiente con contrato de prestación de servicios superior a 1 mes'),
         ('61', 'Beneficiario programa de reincorporación'),
-        ], string='Tipo Trabajador',tracking=True)
+        ], string='Tipo Trabajador (Antiguo)',tracking=True)
+
+    pila_tipo_trabajador_id = fields.Many2one(
+        'pila.tipo.trabajador',
+        string='Tipo Trabajador',
+        tracking=True
+    )
+
     sub_tipo_trabajador = fields.Selection([
         ('00', 'Ninguna'),
         ('01', '1.Dependiente pensionado por vejez activo'),
@@ -79,7 +86,14 @@ class HrContract(models.Model):
         # ('19', 'Residente en el exterior afiliado voluntario al sistema general de pensiones y/o afiliado'),
         # ('20', 'Conductores del servicio público de transporte terrestre automotor individual de pasajeros en vehículos taxi decreto 1047 de 2014'),
         # ('21', 'Conductores servicio taxi no aporte pensión dec. 1047'),
-        ], string='Subtipo de Trabajador',tracking=True)
+        ], string='Subtipo de Trabajador (Antiguo)',tracking=True)
+
+    pila_subtipo_trabajador_id = fields.Many2one(
+        'pila.subtipo.trabajador',
+        string='Subtipo de Trabajador',
+        tracking=True
+    )
+
     AltoRiegoPension = fields.Selection([
         ('false', 'NO'),
         ('true', 'SI'),
