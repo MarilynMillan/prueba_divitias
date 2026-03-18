@@ -16,6 +16,8 @@
         'views/hr_payslip.xml',
         'views/hr_salary_rule.xml',
         'views/work_center.xml',
+        'views/hr_worker_type.xml',
+        'views/hr_worker_subtype.xml',
         'wizard/payrol_excel_wizard_view.xml',
         
     
