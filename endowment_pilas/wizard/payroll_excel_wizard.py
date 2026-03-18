@@ -238,7 +238,7 @@ class PayrollExcelWizard(models.TransientModel):
                 # Si está en el rango, aplicamos el concepto del contrato
                 if es_periodo_ingreso:
                     # Buscamos el código del Many2one, si no hay, ponemos 'X'
-                    valor_ing = contract.pila_ingreso_concepto_id.code or 'X'
+                    valor_ing = contract.pila_ingreso_concepto_id.name or 'NO'
 
             # --- Lógica: Fecha final del contrato ---
             fecha_final_contrato = False
@@ -265,7 +265,7 @@ class PayrollExcelWizard(models.TransientModel):
                 # Si está en el rango, aplicamos el concepto del contrato
                 if es_periodo_retiro:
                     # Buscamos el código del Many2one, si no hay, ponemos 'X'
-                    valor_ret = contract.pila_retiro_concepto_id.code or 'X'
+                    valor_ret = contract.pila_retiro_concepto_id.name or 'NO'
 
             # Inicializar un diccionario para guardar los valores por defecto 'NO'
             # Asegúrate de que los códigos aquí coincidan con los de tu campo 'novelty_code'

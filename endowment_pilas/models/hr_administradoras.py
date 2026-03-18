@@ -4,7 +4,8 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
 class administradoras(models.Model):
-    _inherit = 'hr.administradoras'
+    _name = 'hr.administradoras' # Aseguramos el nombre técnico
+    _inherit = ['hr.administradoras', 'mail.thread', 'mail.activity.mixin']
 
 
     tarifa = fields.Float( string="Tarifa",tracking=True)

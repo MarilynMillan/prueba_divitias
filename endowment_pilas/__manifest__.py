@@ -1,5 +1,5 @@
 {
-    'name': 'Dotación_Nómina',
+    'name': 'dotacion_nomina',
     'version': '18.0.2.0.3',
     'summary': 'Integra los datos de las administradoras y conceptos',
     'description': 'Integra los datos de las administradoras y conceptos',
