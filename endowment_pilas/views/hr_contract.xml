@@ -44,6 +44,21 @@
                  <xpath expr="//field[@name='date_end']" position="after">
                     <field name="pila_retiro_concepto_id"/>
                 </xpath> 
+
+                <xpath expr="//field[@name='tipo_trabajador']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+                <xpath expr="//field[@name='tipo_trabajador']" position="after">
+                    <field name="pila_tipo_trabajador_id" required="1"/>
+                </xpath>
+
+                <xpath expr="//field[@name='sub_tipo_trabajador']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+                <xpath expr="//field[@name='sub_tipo_trabajador']" position="after">
+                    <field name="pila_subtipo_trabajador_id" required="1"/>
+                </xpath>
+
             </field>
         </record>
 
