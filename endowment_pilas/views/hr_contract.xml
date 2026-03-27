@@ -11,17 +11,8 @@
                         <field name="pila_novelty_ids">
                             <list editable="bottom">
                                 <field name="novelty_type_id"/>
-                                <!--field name="traslado"/>
-                                <field name="ftp_destino_pension" 
-                                       invisible="novelty_code not in ['TDP']"
-                                       required="traslado and novelty_code in ['TDP']"/>
-                                <field name="ftp_destino_salud" 
-                            
-                                       invisible="novelty_code not in ['TDE']"
-                                       required="traslado and novelty_code in ['TDE']"/-->
                                 <field name="date_start"/>
                                 <field name="date_end"/>
-                                <!--field name="novelty_code" column_invisible="True"/-->
                             </list>
                         </field>
                     </page>
@@ -54,6 +45,36 @@
                     <field name="pila_retiro_concepto_id"/>
                 </xpath> 
             </field>
+        </record>
+
+        <record id="view_hr_contract_form_inherit_dotacion" model="ir.ui.view">
+            <field name="name">hr.contract.form.inherit.dotacion</field>
+            <field name="model">hr.contract</field>
+            <field name="inherit_id" ref="fix_extructuras_de_pago.hr_contract_administradora_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='administradoras_ids']/form//field[@name='ccostos']" position="after">
+                    <field name="type_entity" widget="radio" options="{'horizontal': true}"/>
+                    <field name="show_ccf" invisible="1"/>
+                    
+                    <field name="list_administradora_id" 
+                           options="{'no_create': True, 'no_edit': True}" 
+                           invisible="not type_entity"/>
+                    
+                    <field name="tarifa"/>
+                    
+                    <field name="tarifa_sena" invisible="not show_ccf" required="show_ccf"/>
+                    <field name="tarifa_icbf" invisible="not show_ccf" required="show_ccf"/>
+                    <field name="tarifa_esap" invisible="not show_ccf" required="show_ccf"/>
+                    <field name="tarifa_men" invisible="not show_ccf" required="show_ccf"/>
+                    
+                    <field name="traslado"/>
+                    <field name="list_administradora_destino_id" 
+                           invisible="not traslado" 
+                           required="traslado"
+                           options="{'no_create': True, 'no_edit': True}"/>
+                </xpath>
+
+                </field>
         </record>
     </data>
 </odoo>
