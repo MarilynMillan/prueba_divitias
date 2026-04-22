@@ -473,13 +473,14 @@ class PayrollExcelWizard(models.TransientModel):
                 # 3. Buscamos la abreviatura en el mapeo. Si no está, dejamos el nombre original.
                 tipo_doc_upc_abreviado = mapeo_id.get(nombre_doc_upc, nombre_doc_upc)
 
-                # 4. Obtenemos el número de identificación adicional
-                numero_upc = employee.upc_identification_number or ''
+                # 4. Obtenemos el número y le quitamos puntos/guiones/espacios
+                raw_upc = employee.upc_identification_number or ''
+                numero_upc_limpio = str(raw_upc).replace('.', '').replace('-', '').strip()
 
                 data = [
                     row_counter,                                      # 1 (A)
                     tipo_doc_abreviado or 'CC',                                # 2 (B) - Debe ser 'CC', 'CE', etc.
-                    str(employee.employee_address_home.vat or '').strip(), # 3 (C) - Sin espacios
+                    str(employee.employee_address_home.vat or '').replace('.', '').replace('-', '').strip(), # 3 (C)
                     (employee.employee_address_home.last_name or '').upper(), # 4 (D)
                     (employee.employee_address_home.second_last_name or '').upper(), # 5 (E)
                     (employee.employee_address_home.first_name or '').upper(), # 6 (F)
@@ -575,8 +576,8 @@ class PayrollExcelWizard(models.TransientModel):
                     t_men or 0,                                       # 94
                     valores_reglas['valor_cotizacion_men'] or 0,      # 95
                     valores_reglas['exonerado_1607'] or 0,         # 96
-                    tipo_doc_upc_abreviado or 'CC',                   # 97
-                    numero_upc or '',                                 # 98
+                    tipo_doc_upc_abreviado if numero_upc_limpio else '', # 97: Solo pon tipo si hay número
+                    numero_upc_limpio,                                 # 98
                 ]
 
 
@@ -691,13 +692,19 @@ class PayrollExcelWizard(models.TransientModel):
                         continue # Saltamos a la siguiente columna
 
 
-                    # --- 4. IDENTIFICACIONES Y UPC ADICIONAL (Col: 3, 97, 98) ---
-                    elif col_num in [2,3, 97, 98]:
-                        val_id = str(cell_value or '').strip().upper()
-                        # En la 98 NUNCA va "NINGUNO", queda vacío
-                        cell.value = "" if val_id in ['', 'NONE', 'FALSE', 'NINGUNO'] else val_id
-                        cell.data_type = 's' # Forzar texto
-                        continue # Saltamos a la siguiente columna
+                    # 1. IDENTIFICACIONES (B, C, 97, 98): TEXTO PURO SIN NADA MÁS
+                    elif col_num in [2, 3, 97, 98]:
+                        val_clean = str(cell_value or '').strip().upper()
+                        val_clean = val_clean.replace('.', '').replace(',', '')
+
+                        if val_clean in ['NONE', 'FALSE', '0', '']:
+                            cell.value = None
+                        else:
+                            cell.data_type = 's' # Forzar String
+                            cell.value = val_clean
+
+                        # IMPORTANTE: No aplicar alineación ni formatos extra aquí
+                        continue
 
                     if col_num == 79:
                         val_centro = str(cell_value or '').strip().upper()
