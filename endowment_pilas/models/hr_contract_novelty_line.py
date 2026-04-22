@@ -19,45 +19,6 @@ class HrContractNoveltyLine(models.Model):
 
     date_start = fields.Date(string='Fecha Inicio', required=True)
     date_end = fields.Date(string='Fecha Fin')
-    #traslado = fields.Boolean(string='Traslado',tracking=True)
-
-    """ftp_destino_pension = fields.Selection([
-        ('colpensiones', 'COLPENSIONES'),
-        ('colfondos', 'COLFONDOS'),
-        ('fonprecon', 'FONPRECON'),
-        ('skandia', 'SKANDIA'),
-        ('skandia_alt', 'SKANDIA ALTERNATIVO'),
-        ('pensiones_antioquia', 'PENSIONES DE ANTIOQUIA'),
-        ('porvenir', 'PORVENIR'),
-        ('proteccion', 'PROTECCION'),
-        ('caxdac', 'CAXDAC'), # Agregado por referencia a otras imágenes
-        ('ninguna', 'NINGUNA'),
-    ], 
-    string='Administradora Traslado', 
-    help="Lista estática de administradoras de pensión." ,tracking=True)
-
-    # --- NUEVO CAMPO DE SELECCIÓN ESTATICA PARA SALUD ---
-    ftp_destino_salud = fields.Selection([
-        ('aic', 'A.I.C.'),
-        ('aliansalud', 'ALIANSALUD EPS (ANTES COLMEDICA)'),
-        ('anas_wayuu', 'ANAS WAYUU'),
-        ('asmet', 'ASMET SALUD EPS SAS'),
-        ('cajacopi_atlantico', 'CAJACOPI ATLANTICO'),
-        ('capital_salud', 'CAPITAL SALUD'),
-        ('capresoca', 'CAPRESOCA'),
-        ('comfachoco', 'COMFACHOCO'),
-        # Puedes añadir más EPS si es necesario
-        ('ninguna', 'NINGUNA'),
-    ], 
-    string='Administradora Traslado', 
-    help="Lista estática de administradoras de salud (EPS)."  ,tracking=True)"""
-    
-    #novelty_code = fields.Selection(
-        #related='novelty_type_id.code', 
-        #string="Código de Novedad", 
-        #readonly=True,
-        #store=True
-    #)
 
     def write(self, vals):
         tracked_fields = {

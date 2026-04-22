@@ -1,23 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 
 class administradoras(models.Model):
-    _name = 'hr.administradoras'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
-    _description = 'Administradoras'
+    _name = 'hr.administradoras' # Aseguramos el nombre técnico
+    _inherit = ['hr.administradoras', 'mail.thread', 'mail.activity.mixin']
 
-    name = fields.Char(string="Nombre Comercial" ,tracking=True)
-    company_id = fields.Many2one('res.company', string='Compañia', default=lambda self: self.env.company)
-    ccostos = fields.Many2one("hr.centrocostos", string="Centro de costos" ,tracking=True)
-    administradora = fields.Many2one("hr.tipo", string="Tipo" ,tracking=True)
-    tercero = fields.Many2one("res.partner", string="Tercero")
-    porcentaje = fields.Float(string="Porcentaje" ,tracking=True)
-    compania = fields.Boolean(string="Compañia")
-    colaborador = fields.Boolean(string="Colaborador")
-    centro_costos = fields.Boolean(string="Centro de costos" ,tracking=True)
-    cuenta_debito = fields.Many2one("account.account", string="Cuenta debito" ,tracking=True)
-    cuenta_credito = fields.Many2one("account.account", string="Cuenta crédito" ,tracking=True)
+
     tarifa = fields.Float( string="Tarifa",tracking=True)
     tarifa_sena = fields.Float( string="Tarifa SENA" ,tracking=True)
     tarifa_icbf = fields.Float( string="Tarifa ICBF" ,tracking=True)
@@ -52,11 +42,11 @@ class administradoras(models.Model):
         ('otros', 'Otros')
     ], default="otros",
 
-    string='Tipo de Entidad', 
-    required=True, 
+    string='Tipo de Entidad',
+    required=True,
     help="Clasificación de la administradora para propósitos de nómina (PILA)." ,tracking=True)
 
-   
+
     show_ccf = fields.Boolean(compute="_compute_show_ccf",store=True)
     contract_id = fields.Many2one('hr.contract', string="Contrato Relacionado")
 
@@ -102,12 +92,12 @@ class administradoras(models.Model):
 
     def _get_admin_destino_by_type(self, entity_type):
         """
-        Toma como referencia el tipo de la entidad actual (self) para 
+        Toma como referencia el tipo de la entidad actual (self) para
         determinar en qué columna del reporte debe aparecer el destino.
         """
         if not self:
             return ''
-        
+
         self.ensure_one()
 
         # 1. Si no hay traslado, no mostramos nada.
@@ -120,7 +110,7 @@ class administradoras(models.Model):
             # Retornamos el nombre de la administradora destino
             if self.list_administradora_destino_id:
                 return self.list_administradora_destino_id.name or ''
-        
+
         return ''
 
     def get_pension_destino_label(self):
@@ -172,7 +162,7 @@ class administradoras(models.Model):
                 field = self._fields.get(field_name)
                 if field and getattr(field, 'tracking', False):
                     old_val = getattr(record, field_name)
-                    
+
                     old_str = record._format_tracking_value(field_name, old_val)
                     new_str = record._format_tracking_value(field_name, new_val)
 
@@ -180,12 +170,12 @@ class administradoras(models.Model):
                         # Implementación de la flecha con estilo
                         linea = f"""
                             <li>
-                                <b>{field.string}:</b> {old_str} 
-                                <i class='fa fa-long-arrow-right' style='margin: 0 5px; color: #714B67;'></i> 
+                                <b>{field.string}:</b> {old_str}
+                                <i class='fa fa-long-arrow-right' style='margin: 0 5px; color: #714B67;'></i>
                                 {new_str}
                             </li>"""
                         changes.append(linea)
-            
+
             if changes:
                 updates_to_post[record.id] = changes
 
@@ -200,7 +190,7 @@ class administradoras(models.Model):
                         <b>Actualización en Administradora ({record.name}):</b>
                         <ul style='margin-top: 5px;'>{''.join(updates_to_post[record.id])}</ul>
                     </div>"""
-                
+
                 # Publicar mensaje directamente en el contrato vinculado
                 record.contract_id.message_post(
                     body=body,
@@ -209,7 +199,7 @@ class administradoras(models.Model):
                 )
                 # Forzar refresco de la UI tocando el write_date del contrato
                 record.contract_id.write({'write_date': fields.Datetime.now()})
-                        
+
         return res
 
     def create(self, vals):
@@ -220,7 +210,7 @@ class administradoras(models.Model):
         if record.contract_id:
             tipo = record._format_tracking_value('type_entity', record.type_entity)
             tarifa = record.tarifa
-            
+
             body = f"""
                 <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #714B67;">
                     <p style="color: #2c3e50; margin-bottom: 5px;">🌟 <b>Nueva Administradora vinculada:</b> {record.name}</p>
@@ -233,16 +223,5 @@ class administradoras(models.Model):
             record.contract_id.message_post(body=body, subtype_xmlid='mail.mt_note')
             # Forzar refresco inmediato
             record.contract_id.write({'write_date': fields.Datetime.now()})
-        
-        return record
 
-    @api.onchange('centro_costos')
-    def _onchange_centro_costos(self):
-        pass 
-        # today_date = datetime.date.today()
-        # for partner in self:
-        #     if partner.date_of_birth:
-        #         date_of_birth = fields.Datetime.to_datetime(
-        #             partner.date_of_birth).date()
-        #         total_age = ((today_date - date_of_birth).days / 365)
-        #         partner.age = total_age
+        return record

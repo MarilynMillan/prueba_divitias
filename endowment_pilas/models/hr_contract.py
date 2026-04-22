@@ -29,57 +29,20 @@ class HrContract(models.Model):
         ('5', 'Practicas'),
     ], string='Tipo Contrato',tracking=True)
     
-    tipo_trabajador = fields.Selection([
-        ('01', '1.Dependiente'),
-        ('02', 'Servicio domestico'),
-        ('03', 'Independiente'),
-        ('04', 'Madre comunitaria'),
-        ('12', 'Aprendices del Sena en etapa lectiva'),
-        ('16', 'Independiente agremiado o asociado'),
-        ('18', 'Funcionarios públicos sin tope máximo de ibc'),
-        ('19', 'Aprendices del SENA en etapa productiva'),
-        ('20', 'Estudiantes (régimen especial ley 789 de 2002)'),
-        ('21', 'Estudiantes de postgrado en salud'),
-        ('22', 'Profesor de establecimiento particular'),
-        ('23', 'Estudiantes aportes solo riesgos laborales'),
-        ('30', 'Dependiente entidades o universidades públicas con régimen especial en salud'),
-        ('31', 'Cooperados o pre cooperativas de trabajo asociado'),
-        ('32', 'Cotizante miembro de la carrera diplomática o consular de un país extranjero o funcionario de organismo multilateral'),
-        ('33', 'Beneficiario del fondo de solidaridad pensional'),
-        ('34', 'Concejal municipal o distrital o edil de junta administrativa local que percibe honorarios amparado por póliza de salud'),
-        ('35', 'Concejal municipal o distrital que percibe honorarios no amparado con póliza de salud'),
-        ('36', 'Concejal municipal o distrital que percibe honorarios no amparado con póliza de salud beneficiario del fondo de solidaridad pensional'),
-        ('40', 'Beneficiario upc adicional'),
-        ('41', 'Beneficiario sin ingresos con pago por tercero'),
-        ('42', 'Cotizante pago solo salud articulo 2 ley 1250 de 2008 (independientes de bajos ingresos)'),
-        ('43', 'Cotizante voluntario a pensiones con pago por tercero'),
-        ('44', 'Cotizante dependiente de empleo de emergencia con duración mayor o igual a un mes'),
-        ('45', 'Cotizante dependiente de empleo de emergencia con duración menor a un mes'),
-        ('47', 'Trabajador dependiente de entidad beneficiaria del sistema general de participaciones - aportes patronales'),
-        ('51', 'Trabajador de tiempo parcial'),
-        ('52', 'Beneficiario del mecanismo de protección al cesante'),
-        ('53', 'Afiliado participe'),
-        ('54', 'Pre pensionado de entidad en liquidación.'),
-        ('55', 'Afiliado participe - dependiente'),
-        ('56', 'Pre pensionado con aporte voluntario a salud'),
-        ('57', 'Independiente voluntario al sistema de riesgos laborales'),
-        ('58', 'Estudiantes de prácticas laborales en el sector público'),
-        ('59', 'Independiente con contrato de prestación de servicios superior a 1 mes'),
-        ('61', 'Beneficiario programa de reincorporación'),
-        ], string='Tipo Trabajador',tracking=True)
-    sub_tipo_trabajador = fields.Selection([
-        ('00', 'Ninguna'),
-        ('01', '1.Dependiente pensionado por vejez activo'),
-        # ('02', 'Independiente pensionado por vejez activo'),
-        # ('03', 'Cotizante no obligado a cotizar a pensión por edad'),
-        # ('04', 'Cotizante con requisitos cumplidos para pensión'),
-        # ('12', 'Cotizante a quien se le ha reconocido indemnización sustitutiva o devolución de saldos'),
-        # ('16', 'Cotizante perteneciente a un régimen de exceptuado de pensiones a entidades autorizadas para recibir aportes exclusivamente de un grupo de sus propios'),
-        # ('18', 'Cotizante pensionado con mesada superior a 25 smlmv'),
-        # ('19', 'Residente en el exterior afiliado voluntario al sistema general de pensiones y/o afiliado'),
-        # ('20', 'Conductores del servicio público de transporte terrestre automotor individual de pasajeros en vehículos taxi decreto 1047 de 2014'),
-        # ('21', 'Conductores servicio taxi no aporte pensión dec. 1047'),
-        ], string='Subtipo de Trabajador',tracking=True)
+
+    pila_tipo_trabajador_id = fields.Many2one(
+        'pila.tipo.trabajador',
+        string='Cotizante',
+        tracking=True
+    )
+
+
+    pila_subtipo_trabajador_id = fields.Many2one(
+        'pila.subtipo.trabajador',
+        string='Sub-cotizante',
+        tracking=True
+    )
+
     AltoRiegoPension = fields.Selection([
         ('false', 'NO'),
         ('true', 'SI'),
@@ -204,7 +167,7 @@ class HrContract(models.Model):
     pila_retiro_concepto_id = fields.Many2one(
         'hr.contract.concept', 
         string="Concepto egreso",
-        domain=[('type', '=', 'egreso')]
+        domain=[('type', '=', 'retiro')]
     )
 
     @api.model
@@ -221,5 +184,32 @@ class HrContract(models.Model):
 
         return super(HrContract, self).write(vals)
 
+    def get_admin_by_type(self, tipo):
+        """Retorna la administradora del tipo solicitado."""
+        self.ensure_one()
+        admin = self.administradoras_ids.filtered(lambda r: r.type_entity == tipo)
+        return admin[0] if admin else False
+
+    def get_tarifa_by_type(self, tipo):
+        """Devuelve la tarifa aplicable (un float) para el tipo de entidad.
+
+        Busca la administradora asociada al contrato según el 'tipo' (ej: 'pension', 'salud')
+        y retorna el valor de su campo 'tarifa'.
+        """
+        self.ensure_one()
+
+        # 1. Obtener la administradora utilizando el método ya existente en el contrato.
+        # Se asume que get_admin_by_type(tipo) devuelve un único registro 'hr.administradoras' o False/None.
+        admin = self.get_admin_by_type(tipo)
+
+        # 2. Devolver la tarifa si se encuentra la administradora, de lo contrario, 0.0 o ''.
+        # NOTA: Se recomienda devolver 0.0 si la columna en el Excel es numérica.
+        # Si la tarifa no existe o es None, Odoo la tratará como 0.0 para campos Float,
+        # pero aquí forzamos el valor si el registro existe.
+        if admin and hasattr(admin, 'tarifa'):
+            return admin.tarifa
+
+        # Siempre devuelva un valor escalar predecible.
+        return 0.0
 
 

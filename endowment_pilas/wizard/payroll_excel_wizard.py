@@ -16,6 +16,9 @@ class PayrollExcelWizard(models.TransientModel):
     date_to = fields.Date(string="Fecha Hasta")
     payslip_run_id = fields.Many2one('hr.payslip.run', string="Lote de Nómina")
 
+    plantilla_excel = fields.Binary(string='Plantilla Excel', help='Sube la plantilla de Excel para usar en el reporte. Si está vacío, se usará la plantilla por defecto.')
+    plantilla_excel_name = fields.Char(string='Nombre Archivo Plantilla')
+
     def action_generate_excel_report(self):
         """
         Genera el reporte Excel de recibos de nómina filtrados.
@@ -30,6 +33,9 @@ class PayrollExcelWizard(models.TransientModel):
 
         if self.payslip_run_id:
             domain.append(('payslip_run_id', '=', self.payslip_run_id.id))
+
+        # 👇 FILTRO POR ESTADO (CLAVE)
+        domain.append(('state', '=', 'done'))
 
         # Si no hay filtros, el dominio estará vacío y traerá todos los recibos.
         # Puedes añadir una validación aquí si quieres forzar al menos un filtro.
@@ -51,15 +57,22 @@ class PayrollExcelWizard(models.TransientModel):
         output = io.BytesIO()
 
         # 1. CARGAR LA PLANTILLA (El molde que ya tiene todo el diseño)
-        path = get_module_resource('endowment_pilas', 'data', 'DIVITIASSAS_1.xlsx')
-        if not path or not os.path.exists(path):
-             raise UserError(f"No se encontró la plantilla en: {path}")
+        if self.plantilla_excel:
+            try:
+                wb = openpyxl.load_workbook(io.BytesIO(base64.b64decode(self.plantilla_excel)))
+                sheet = wb.active
+            except Exception as e:
+                raise UserError(f"Error al abrir la plantilla subida: {str(e)}")
+        else:
+            path = get_module_resource('endowment_pilas', 'data', 'DIVITIASSAS_1.xlsx')
+            if not path or not os.path.exists(path):
+                 raise UserError(f"No se encontró la plantilla en: {path}")
 
-        try:
-            wb = openpyxl.load_workbook(path)
-            sheet = wb.active 
-        except Exception as e:
-            raise UserError(f"Error al abrir la plantilla: {str(e)}")
+            try:
+                wb = openpyxl.load_workbook(path)
+                sheet = wb.active
+            except Exception as e:
+                raise UserError(f"Error al abrir la plantilla: {str(e)}")
 
         # 2. DEFINIR SOLO EL ESTILO DE DATOS
         left_alignment = Alignment(horizontal='left', vertical='center')
@@ -102,17 +115,24 @@ class PayrollExcelWizard(models.TransientModel):
             # mapeo_id es el diccionario que definimos en el paso anterior
             tipo_doc_abreviado = mapeo_id.get(nombre_largo, nombre_largo)
             #####################################################################
-            tipo_cotizante_excel_label = '' 
-            if contract and contract.tipo_trabajador: # Asegúrate que el campo se llama 'tipo_trabajador' y no 'tipo_cotizante'
-                # --- CORRECCIÓN AQUÍ ---
-                # Método recomendado para obtener la etiqueta legible del campo Selection
-                tipo_cotizante_excel_label = dict(contract._fields['tipo_trabajador'].selection).get(contract.tipo_trabajador, '')
+            tipo_cotizante_excel_label = 'NINGUNA' 
+            if contract:
+                if contract.pila_tipo_trabajador_id:
+                    # Usamos el nombre del nuevo campo configurable, si tiene algo (como '1.Dependiente')
+                    tipo_cotizante_excel_label = contract.pila_tipo_trabajador_id.name or "NINGUNA"
+                #elif contract.tipo_trabajador:
+                    # --- CORRECCIÓN AQUÍ ---
+                    # Método recomendado para obtener la etiqueta legible del campo Selection
+                    #tipo_cotizante_excel_label = dict(contract._fields['tipo_trabajador'].selection).get(contract.tipo_trabajador, '')
 
-            sub_cotizante_excel_label = '' 
-            if contract and contract.sub_tipo_trabajador: # Asegúrate que el campo se llama 'tipo_trabajador' y no 'tipo_cotizante'
-                # --- CORRECCIÓN AQUÍ ---
-                # Método recomendado para obtener la etiqueta legible del campo Selection
-                sub_cotizante_excel_label = dict(contract._fields['sub_tipo_trabajador'].selection).get(contract.sub_tipo_trabajador, '')
+            sub_cotizante_excel_label = 'NINGUNA' 
+            if contract:
+                if contract.pila_subtipo_trabajador_id:
+                    sub_cotizante_excel_label = contract.pila_subtipo_trabajador_id.name or "NINGUNA"
+                #elif contract.sub_tipo_trabajador:
+                    # --- CORRECCIÓN AQUÍ ---
+                    # Método recomendado para obtener la etiqueta legible del campo Selection
+                    #sub_cotizante_excel_label = dict(contract._fields['sub_tipo_trabajador'].selection).get(contract.sub_tipo_trabajador, '')
 
             # --- NUEVO: Lógica para 'Horas Laboradas' ---
 
@@ -122,15 +142,19 @@ class PayrollExcelWizard(models.TransientModel):
             dias_cotizados_ccf = 0.0
             
             horas_laboradas = 0.0
+            dias_laborados = 0.0  # 👈 nuevo acumulador
 
-            # Iteramos sobre todas las líneas de días trabajados/novedades
             for worked_day_line in payslip.worked_days_line_ids:
                 days = worked_day_line.number_of_days
+                hours = worked_day_line.number_of_hours
                 code = worked_day_line.code
                 
-                # 1. ACUMULACIÓN DE HORAS LABORADAS (Solo WORK100)
+                # DÍAS: Se acumulan todos para que coincida con el total (sum) del XML
+                dias_laborados += days 
+                
+                # HORAS: Únicamente si es el código de asistencia
                 if code == 'WORK100': 
-                    horas_laboradas += worked_day_line.number_of_hours
+                    horas_laboradas += hours
 
                 
                 # 2. ACUMULACIÓN DE DÍAS COTIZADOS 
@@ -175,50 +199,6 @@ class PayrollExcelWizard(models.TransientModel):
 
 
             # --- Lógica: ING (Ingreso) ---
-            """valor_ing = 'NO'
-            if fecha_inicio_contrato:
-                # Si se definió rango desde / hasta
-                if self.date_from and self.date_to:
-                    if self.date_from <= fecha_inicio_contrato <= self.date_to:
-                        valor_ing = 'SI'
-                # Si solo hay fecha desde
-                elif self.date_from:
-                    if fecha_inicio_contrato >= self.date_from:
-                        valor_ing = 'SI'
-                # Si solo hay fecha hasta
-                elif self.date_to:
-                    if fecha_inicio_contrato <= self.date_to:
-                        valor_ing = 'SI'
-                # Si no hay filtro de fechas, pero existe fecha de contrato
-                else:
-                    valor_ing = 'SI'
-
-            
-            # --- Lógica: Fecha final del contrato ---
-            fecha_final_contrato = False
-            if contract and getattr(contract, 'date_end', False):
-                fecha_final_contrato = contract.date_end  # Tipo Date normalmente
-
-            # --- Lógica: RET (Retiro) ---
-            valor_ret = 'NO'
-            if fecha_final_contrato:
-                # Si se definió rango desde / hasta
-                if self.date_from and self.date_to:
-                    if self.date_from <= fecha_final_contrato <= self.date_to:
-                        valor_ret = 'SI'
-                # Si solo hay fecha desde
-                elif self.date_from:
-                    if fecha_final_contrato >= self.date_from:
-                        valor_ret = 'SI'
-                # Si solo hay fecha hasta
-                elif self.date_to:
-                    if fecha_final_contrato <= self.date_to:
-                        valor_ret = 'SI'
-                # Si no hay filtro de fechas, pero existe fecha de contrato
-                else:
-                    valor_ret = 'SI'"""
-
-            # --- Lógica: ING (Ingreso) ---
             valor_ing = 'NO'
             if fecha_inicio_contrato:
                 es_periodo_ingreso = False
@@ -238,7 +218,7 @@ class PayrollExcelWizard(models.TransientModel):
                 # Si está en el rango, aplicamos el concepto del contrato
                 if es_periodo_ingreso:
                     # Buscamos el código del Many2one, si no hay, ponemos 'X'
-                    valor_ing = contract.pila_ingreso_concepto_id.code or 'X'
+                    valor_ing = contract.pila_ingreso_concepto_id.name or 'NO'
 
             # --- Lógica: Fecha final del contrato ---
             fecha_final_contrato = False
@@ -265,7 +245,7 @@ class PayrollExcelWizard(models.TransientModel):
                 # Si está en el rango, aplicamos el concepto del contrato
                 if es_periodo_retiro:
                     # Buscamos el código del Many2one, si no hay, ponemos 'X'
-                    valor_ret = contract.pila_retiro_concepto_id.code or 'X'
+                    valor_ret = contract.pila_retiro_concepto_id.name or 'NO'
 
             # Inicializar un diccionario para guardar los valores por defecto 'NO'
             # Asegúrate de que los códigos aquí coincidan con los de tu campo 'novelty_code'
@@ -415,45 +395,6 @@ class PayrollExcelWizard(models.TransientModel):
             arl_admin = contract.get_admin_by_type('arl')
             ccf_admin = contract.get_admin_by_type('ccf')
 
-            ##########################################################
-            # Inicializamos los valores de IBC
-
-            """ibc_values = {
-                    'pension': 0.0,
-                    'salud': 0.0,
-                    'arl': 0.0,
-                    'ccf': 0.0,
-                }
-
-            # Recorro las líneas del recibo
-            for line in payslip.line_ids:
-                rule = line.salary_rule_id
-
-                if not rule:
-                        continue
-
-                # Si la regla está marcada como PENSIÓN → va a esa celda
-                if rule.is_pension:
-                    ibc_values['pension'] = line.total
-
-                # Si está marcada como SALUD → va a esa celda
-                if rule.is_salud:
-                    ibc_values['salud'] = line.total
-
-                # Si la regla pertenece a ARL
-                if rule.is_arl:
-                    ibc_values['arl'] = line.total
-
-                # Si está marcada como CCF
-                if rule.is_ccf:
-                    ibc_values['ccf'] = line.total
-
-            excel_ibc_pension = ibc_values['pension'] if ibc_values['pension'] > 0 else ""
-            excel_ibc_salud   = ibc_values['salud'] if ibc_values['salud'] > 0 else ""
-            excel_ibc_arl     = ibc_values['arl'] if ibc_values['arl'] > 0 else ""
-            excel_ibc_ccf     = ibc_values['ccf'] if ibc_values['ccf'] > 0 else """
-
-
 
             # --------------------------- Lógica de Alto Riesgo ---------------------------
             alto_riesgo_selection = self.env['hr.contract'].fields_get(allfields=['alto_riesgo']
@@ -463,63 +404,13 @@ class PayrollExcelWizard(models.TransientModel):
             if contract and contract.alto_riesgo:
                 alto_riesgo_label = dict(alto_riesgo_selection).get(contract.alto_riesgo, '')
 
-            ############################################################################
-            # Reglas salariales por CODE
-
-            """reglas_excel = {
-                'valor_cotizacion_pension':       {'code': 'CotPension'},
-                'valor_cotizacion_salud':         {'code': 'CotSalud'},
-                'valor_cotizacion_riesgo':        {'code': 'CotRiesgo'},
-                'valor_cotizacion_ccf':           {'code': 'CotCcf'},
-                'cotizacion_voluntaria_afiliado': {'code': 'PensionVoluntaria'},
-                'cotizacion_voluntaria_empleador':{'code': 'PensionVoluntariaEmp'},
-                'fondo_solidaridad':              {'code': 'FondoSolidaridad'},
-                'fondo_subsistencia':             {'code': 'FondoSubsistencia'},
-                'valor_no_retenido':              {'code': 'ValorNoRetenido'},
-                'total_aportes':                  {'code': 'TotalAportes'},
-                'valor_upc':                      {'code': 'Valorupc'},
-                'n_autorizacion_incap_eg':        {'code': 'IncapacidadEG'},
-                'valor_incapacidad_eg':           {'code': 'ValorIncapacidadEG'},
-                'valor_licencia_maternidad':      {'code': 'LicenciaMP'},
-                'valor_ccf':                      {'code': 'CotizacionCCF'},
-                'ibc_pension':                    {'code': 'IbcPension'},
-                'ibc_salud':                      {'code': 'IbcSalud'},
-                'ibc_riesgo':                     {'code': 'IbcRiesgo'},
-                'ibc_ccf':                        {'code': 'IbcCcf'},
-                'ibc_otros_parafiscales':         {'code': 'IbcOtros'},
-                'valor_cotizacion_sena':          {'code': 'Sena'},
-                'valor_cotizacion_icbf':          {'code': 'CotizacionICBF'},
-                'valor_cotizacion_esap':          {'code': 'CotizacionESAP'},
-                'valor_cotizacion_men':           {'code': 'CotizacionMEN'},
-                'exonerado_1607':                 {'code': 'Exonerado1607'},
-            }
-
-            # Inicializar resultados
-            #valores_reglas = {k: 0.0 for k in reglas_excel.keys()}
-            valores_reglas = {k: "" for k in reglas_excel.keys()}
-
-            # Recorrer líneas de nómina
-            for line in payslip.line_ids:
-                if not line.salary_rule_id:
-                    continue
-
-                rule_code = line.salary_rule_id.code
-
-                for key, config in reglas_excel.items():
-                    if rule_code == config['code']:
-                        # Si la celda está vacía, asignamos el primer valor
-                        if valores_reglas[key] == "":
-                            valores_reglas[key] = line.total
-                        else:
-                            # Si ya tiene un valor numérico, sumamos el siguiente
-                            valores_reglas[key] += line.total"""
 
             claves_reporte = [
                 'valor_cotizacion_pension', 'valor_cotizacion_salud', 'valor_cotizacion_riesgo',
                 'valor_cotizacion_ccf', 'cotizacion_voluntaria_afiliado', 'cotizacion_voluntaria_empleador',
                 'fondo_solidaridad', 'fondo_subsistencia', 'valor_no_retenido', 'total_aportes',
-                'valor_upc', 'valor_incapacidad_eg', 'valor_licencia_maternidad', 'ibc_pension',
-                'ibc_salud', 'ibc_riesgo', 'ibc_ccf', 'ibc_otros_parafiscales',
+                'valor_upc', 'valor_incapacidad_eg', 'valor_licencia_maternidad',
+                'ibc','ibc_otros_parafiscales',
                 'valor_cotizacion_sena', 'valor_cotizacion_icbf', 'valor_cotizacion_esap',
                 'valor_cotizacion_men', 'exonerado_1607'
             ]
@@ -630,8 +521,8 @@ class PayrollExcelWizard(models.TransientModel):
 
                 # --- PENSION ---
                 pension_admin.get_pension_label() if pension_admin else 'NINGUNA', # 50
-                dias_cotizados_pension or 0,                      # 51
-                valores_reglas['ibc_pension'] or 0,               # 52
+                dias_laborados or 0,                      # 51
+                valores_reglas['ibc'] or 0,               # 52
                 contract.get_tarifa_by_type('pension') or 0,      # 53
                 valores_reglas['valor_cotizacion_pension'] or 0,  # 54
                 alto_riesgo_label or 'NO',                        # 55
@@ -645,8 +536,8 @@ class PayrollExcelWizard(models.TransientModel):
 
                 # --- SALUD ---
                 salud_admin.get_salud_label() if salud_admin else 'NINGUNA', # 63
-                dias_cotizados_salud or 0,                        # 64
-                valores_reglas['ibc_salud'] or 0,                 # 65
+                dias_laborados or 0,                        # 64
+                valores_reglas['ibc'] or 0,                 # 65
                 contract.get_tarifa_by_type('salud') or 0,        # 66
                 valores_reglas['valor_cotizacion_salud'] or 0,    # 67
                 valores_reglas['valor_upc'] or 0,                 # 68
@@ -658,8 +549,8 @@ class PayrollExcelWizard(models.TransientModel):
 
                 # --- RIESGOS (ARL) ---
                 arl_admin.get_arl_label() if arl_admin else 'NINGUNA', # 74
-                dias_cotizados_arl or 0,                          # 75
-                valores_reglas['ibc_riesgo'] or 0,                # 76
+                dias_laborados or 0,                          # 75
+                valores_reglas['ibc'] or 0,                # 76
                 contract.get_tarifa_by_type('arl') or 0,          # 77
                 valor_clase or '1',                               # 78
                 #nombre_departamento or '',                        # 79
@@ -668,9 +559,9 @@ class PayrollExcelWizard(models.TransientModel):
                 valores_reglas['valor_cotizacion_riesgo'] or 0,   # 81
 
                 # --- CAJA Y PARAFISCALES ---
-                dias_cotizados_ccf or 0,                          # 82
+                dias_laborados or 0,                          # 82
                 ccf_admin.get_ccf_label() if ccf_admin else 'NINGUNA', # 83
-                valores_reglas['ibc_ccf'] or 0,                   # 84
+                valores_reglas['ibc'] or 0,                   # 84
                 contract.get_tarifa_by_type('ccf') or 0,          # 85
                 valores_reglas['valor_cotizacion_ccf'] or 0,      # 86
                 valores_reglas['ibc_otros_parafiscales'] or 0,    # 87
@@ -687,25 +578,6 @@ class PayrollExcelWizard(models.TransientModel):
                 numero_upc or '',                                 # 98
             ]
             
-    
-            """for col_num, cell_value in enumerate(data):
-                # Mostrar las fechas en formato dd/mm/yyyy
-                if isinstance(cell_value, (fields.Date, date, datetime)):
-                    if isinstance(cell_value, date) and not isinstance(cell_value, datetime):
-                        cell_value = datetime.combine(cell_value, datetime.min.time())
-                    sheet.write_datetime(row_num, col_num, cell_value, date_format)
-                else:
-                    sheet.write(row_num, col_num, cell_value)"""
-
-            # --- BUCLE DE ESCRITURA AJUSTADO ---
-            """for col_num, cell_value in enumerate(data):
-                # Mostrar las fechas en formato dd/mm/yyyy
-                if isinstance(cell_value, (fields.Date, date, datetime)):
-                    if isinstance(cell_value, date) and not isinstance(cell_value, datetime):
-                        cell_value = datetime.combine(cell_value, datetime.min.time())
-                    sheet.write_datetime(row_num, col_num, cell_value, date_format)
-                else:
-                    sheet.write(row_num, col_num, cell_value)"""
 
             # --- PROCESO DE ESCRITURA CON VALIDACIÓN DE FORMATO ---
             for col_num, cell_value in enumerate(data, start=1):
@@ -761,6 +633,7 @@ class PayrollExcelWizard(models.TransientModel):
                         cell.value = "NINGUNA"
                     else:
                         cell.value = val_admin
+                    continue
 
                 # --- 1. CLASE DE RIESGO (Columna 78) ---
                 elif col_num == 55:
