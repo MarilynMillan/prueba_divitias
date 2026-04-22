@@ -59,7 +59,12 @@ class PayrollExcelWizard(models.TransientModel):
         # 1. CARGAR LA PLANTILLA (El molde que ya tiene todo el diseño)
         if self.plantilla_excel:
             try:
-                wb = openpyxl.load_workbook(io.BytesIO(base64.b64decode(self.plantilla_excel)))
+                # Se agrega data_only=False y keep_vba=True para proteger fórmulas y macros
+                wb = openpyxl.load_workbook(
+                    io.BytesIO(base64.b64decode(self.plantilla_excel)),
+                    data_only=False,
+                    keep_vba=True
+                )
                 sheet = wb.active
             except Exception as e:
                 raise UserError(f"Error al abrir la plantilla subida: {str(e)}")
@@ -69,7 +74,8 @@ class PayrollExcelWizard(models.TransientModel):
                  raise UserError(f"No se encontró la plantilla en: {path}")
 
             try:
-                wb = openpyxl.load_workbook(path)
+                # Se agrega data_only=False y keep_vba=True aquí también
+                wb = openpyxl.load_workbook(path, data_only=False, keep_vba=True)
                 sheet = wb.active
             except Exception as e:
                 raise UserError(f"Error al abrir la plantilla: {str(e)}")
@@ -476,6 +482,8 @@ class PayrollExcelWizard(models.TransientModel):
                 # 4. Obtenemos el número y le quitamos puntos/guiones/espacios
                 raw_upc = employee.upc_identification_number or ''
                 numero_upc_limpio = str(raw_upc).replace('.', '').replace('-', '').strip()
+                # 4. Obtenemos el número de identificación adicional
+                #numero_upc = employee.upc_identification_number or ''
 
                 data = [
                     row_counter,                                      # 1 (A)
@@ -577,13 +585,16 @@ class PayrollExcelWizard(models.TransientModel):
                     valores_reglas['valor_cotizacion_men'] or 0,      # 95
                     valores_reglas['exonerado_1607'] or 0,         # 96
                     tipo_doc_upc_abreviado if numero_upc_limpio else '', # 97: Solo pon tipo si hay número
-                    numero_upc_limpio,                                 # 98
+                    numero_upc_limpio,
                 ]
 
 
                 # --- PROCESO DE ESCRITURA CON VALIDACIÓN DE FORMATO ---
                 for col_num, cell_value in enumerate(data, start=1):
                     cell = sheet.cell(row=row_num, column=col_num)
+
+
+
 
                     # 1. COLUMNA DE ÍNDICE (Registro)
                     if col_num == 1:
@@ -818,6 +829,3 @@ class PayrollExcelWizard(models.TransientModel):
             'url': '/web/content/%s?download=true' % (attachment.id),
             'target': 'self',
         }
-
-
-   
