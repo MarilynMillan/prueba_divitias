@@ -62,8 +62,7 @@ class PayrollExcelWizard(models.TransientModel):
                 # Se agrega data_only=False y keep_vba=True para proteger fórmulas y macros
                 wb = openpyxl.load_workbook(
                     io.BytesIO(base64.b64decode(self.plantilla_excel)),
-                    data_only=False,
-                    keep_vba=True
+                    data_only=False
                 )
                 sheet = wb.active
             except Exception as e:
@@ -75,7 +74,7 @@ class PayrollExcelWizard(models.TransientModel):
 
             try:
                 # Se agrega data_only=False y keep_vba=True aquí también
-                wb = openpyxl.load_workbook(path, data_only=False, keep_vba=True)
+                wb = openpyxl.load_workbook(path, data_only=False)
                 sheet = wb.active
             except Exception as e:
                 raise UserError(f"Error al abrir la plantilla: {str(e)}")
@@ -798,6 +797,12 @@ class PayrollExcelWizard(models.TransientModel):
                 row_num += 1
 
             row_counter += 1
+
+        # --- CORRECCIÓN: ELIMINAR FILAS EN BLANCO AL FINAL ---
+        # Borra desde la fila actual hasta el final de lo que openpyxl cree que existe
+        # Esto evita que Aportes en Línea procese celdas vacías como errores
+        if row_num <= sheet.max_row:
+            sheet.delete_rows(row_num, sheet.max_row - row_num + 1)
 
         # 5. AJUSTE DE ANCHO Y GUARDADO FINAL
         for col in sheet.columns:
