@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vistas para pila.tipo.trabajador -->
+    <record id="view_pila_tipo_trabajador_tree" model="ir.ui.view">
+        <field name="name">pila.tipo.trabajador.tree</field>
+        <field name="model">pila.tipo.trabajador</field>
+        <field name="arch" type="xml">
+            <list string="Tipos de Trabajador PILA">
+                <field name="code"/>
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pila_tipo_trabajador_form" model="ir.ui.view">
+        <field name="name">pila.tipo.trabajador.form</field>
+        <field name="model">pila.tipo.trabajador</field>
+        <field name="arch" type="xml">
+            <form string="Tipo de Trabajador PILA">
+                <sheet>
+                    <group>
+                        <field name="code"/>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pila_tipo_trabajador" model="ir.actions.act_window">
+        <field name="name">Tipos de Trabajador PILA</field>
+        <field name="res_model">pila.tipo.trabajador</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Vistas para pila.subtipo.trabajador -->
+    <record id="view_pila_subtipo_trabajador_tree" model="ir.ui.view">
+        <field name="name">pila.subtipo.trabajador.tree</field>
+        <field name="model">pila.subtipo.trabajador</field>
+        <field name="arch" type="xml">
+            <list string="Subtipos de Trabajador PILA">
+                <field name="code"/>
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pila_subtipo_trabajador_form" model="ir.ui.view">
+        <field name="name">pila.subtipo.trabajador.form</field>
+        <field name="model">pila.subtipo.trabajador</field>
+        <field name="arch" type="xml">
+            <form string="Subtipo de Trabajador PILA">
+                <sheet>
+                    <group>
+                        <field name="code"/>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pila_subtipo_trabajador" model="ir.actions.act_window">
+        <field name="name">Subtipos de Trabajador PILA</field>
+        <field name="res_model">pila.subtipo.trabajador</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Menús bajo Nómina -> Configuración -->
+    <menuitem id="menu_pila_trabajador_config"
+              name="Tipos PILA"
+              parent="hr_payroll.menu_hr_payroll_configuration"
+              sequence="100"/>
+
+    <menuitem id="menu_pila_tipo_trabajador"
+              name="Tipos de Trabajador (Cotizante)"
+              parent="menu_pila_trabajador_config"
+              action="action_pila_tipo_trabajador"
+              sequence="10"/>
+
+    <menuitem id="menu_pila_subtipo_trabajador"
+              name="Subtipos de Trabajador"
+              parent="menu_pila_trabajador_config"
+              action="action_pila_subtipo_trabajador"
+              sequence="20"/>
+</odoo>
