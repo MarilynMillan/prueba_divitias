@@ -360,9 +360,9 @@ class PayrollExcelWizard(models.TransientModel):
                 if current_leave:
                     novelty_code = current_leave.holiday_status_id.pila_novelty_code
                     if novelty_code == 'LMA':
-                        count_lma = int(current_leave.number_of_days)
+                        count_lma = (current_leave.date_to.date() - current_leave.date_from.date()).days + 1
                     elif novelty_code == 'IGE':
-                        count_ige = int(current_leave.number_of_days)
+                        count_ige = (current_leave.date_to.date() - current_leave.date_from.date()).days + 1
                         
                     absence_novelties[novelty_code]['value'] = current_leave.holiday_status_id.name or 'SI'
 
